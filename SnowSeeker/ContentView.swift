@@ -17,9 +17,15 @@ extension View{
     }
 }
 
+enum SortType {
+    case `default`, alphabetical, country
+}
+
 
 struct ContentView: View {
-    
+    @State private var sortType = SortType.default
+    @State private var showingSortOptions = false
+
     @State private var searchText = ""
     @StateObject var favorites = Favorites()
 
@@ -27,7 +33,7 @@ struct ContentView: View {
     let resorts: [Resort] = Bundle.main.decode("resorts.json")
     var body: some View {
         NavigationView {
-            List(resorts){ resort in
+            List(sortedResorts) { resort in
                 NavigationLink{
                     ResortView(resort: resort)
                 } label: {
@@ -58,7 +64,19 @@ struct ContentView: View {
             }
             .navigationTitle("Resorts")
             .searchable(text: $searchText, prompt: "Search for a resort")
-            
+            .toolbar {
+                Button {
+                    showingSortOptions = true
+                } label: {
+                    Label("Change sort order", systemImage: "arrow.up.arrow.down")
+                }
+            }
+            .confirmationDialog("Sort order", isPresented: $showingSortOptions) {
+                Button("Default") { sortType = .default }
+                Button("Alphabetical") { sortType = .alphabetical }
+                Button("By Country") { sortType = .country }
+            }
+
             WelcomeView()
         }
         .phoneOnlyNavigationView()
@@ -72,6 +90,17 @@ struct ContentView: View {
             return resorts.filter {$0.name.localizedCaseInsensitiveContains(searchText)}
         }
     }
+    var sortedResorts: [Resort] {
+        switch sortType {
+        case .default:
+            return filteredResorts
+        case .alphabetical:
+            return filteredResorts.sorted { $0.name < $1.name }
+        case .country:
+            return filteredResorts.sorted { $0.country < $1.country }
+        }
+    }
+
 }
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
